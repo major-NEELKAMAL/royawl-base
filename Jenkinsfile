@@ -13,8 +13,8 @@ pipeline {
     stage('Production Guard') {
       when {
         anyOf {
-          branch 'master'
-          expression { env.GIT_BRANCH == 'origin/master' }
+          branch 'main'
+          expression { env.GIT_BRANCH == 'origin/main' }
           triggeredBy 'UserIdCause'
         }
       }
