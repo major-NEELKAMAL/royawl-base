@@ -28,19 +28,17 @@ pipeline {
         stage('Docker Image Create') {
           steps {
             script {
-              sh "docker build --platform linux/amd64 -t ${IMAGE_NAME} ."
+              // Using buildx guarantees correct architecture build from arm64 host to amd64
+              sh "docker buildx build --platform linux/amd64 -t ${IMAGE_NAME} --load ."
             }
           }
         }
-          
-        
       }
     }
   }
 
   post {
-    failure { echo "Image creation failed!" }
-    success { echo "Image creation successful." }
+    failure { echo "Base image creation failed!" }
+    success { echo "Base image creation successful." }
   }
 }
-
