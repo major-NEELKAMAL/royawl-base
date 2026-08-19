@@ -30,6 +30,9 @@ pipeline {
             script {
               // Removes the old base image layer if present to ensure a fresh build context
               sh "docker rmi -f ${IMAGE_NAME} || true"
+              sh "docker container prune -f"
+              sh "docker image prune -f"
+              sh "docker builder prune -f"
             }
           }
         }
