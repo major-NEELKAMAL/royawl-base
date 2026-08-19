@@ -25,11 +25,29 @@ pipeline {
           }
         }
 
+        stage('Delete Existing Base Image') {
+          steps {
+            script {
+              // Removes the old base image layer if present to ensure a fresh build context
+              sh "docker rmi -f ${IMAGE_NAME} || true"
+            }
+          }
+        }
+
         stage('Docker Image Create') {
           steps {
             script {
-              // Using buildx guarantees correct architecture build from arm64 host to amd64
+              // Builds the new amd64 base image and loads it into the local Docker daemon
               sh "docker buildx build --platform linux/amd64 -t ${IMAGE_NAME} --load ."
+            }
+          }
+        }
+
+        stage('Cleanup Dangling Layers') {
+          steps {
+            script {
+              // Removes leftover intermediate build artifacts without affecting active/tagged images
+              sh "docker image prune -f"
             }
           }
         }
@@ -39,6 +57,6 @@ pipeline {
 
   post {
     failure { echo "Base image creation failed!" }
-    success { echo "Base image creation successful." }
+    success { echo "Base image updated successfully." }
   }
 }
