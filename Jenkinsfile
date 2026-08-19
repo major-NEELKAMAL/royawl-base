@@ -1,9 +1,46 @@
-FROM eclipse-temurin:21-jdk-noble
+pipeline {
+  agent any
 
-RUN apt-get update && apt-get install -y \
-    libopencv-dev \
-    python3-opencv \
-    mysql-client \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+  triggers {
+    githubPush()
+  }
+
+  environment {
+    IMAGE_NAME = "com.aryanlab.royawl/royawl-base:latest"
+  }
+
+  stages {
+    stage('Production Guard') {
+      when {
+        anyOf {
+          branch 'master'
+          expression { env.GIT_BRANCH == 'origin/master' }
+          triggeredBy 'UserIdCause'
+        }
+      }
+      stages {
+        stage('Prepare') {
+          steps {
+            checkout scm
+          }
+        }
+
+        stage('Docker Image Create') {
+          steps {
+            script {
+              sh "docker build --platform linux/amd64 -t ${IMAGE_NAME} ."
+            }
+          }
+        }
+          
+        
+      }
+    }
+  }
+
+  post {
+    failure { echo "Image creation failed!" }
+    success { echo "Image creation successful." }
+  }
+}
 
