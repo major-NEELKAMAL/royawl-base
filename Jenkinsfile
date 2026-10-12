@@ -41,7 +41,25 @@ pipeline {
           steps {
             script {
               // Builds the new amd64 base image and loads it into the local Docker daemon
-              sh "docker buildx build --platform linux/amd64 -t ${IMAGE_NAME} --load ."
+              // --pull fetches the latest eclipse-temurin:21-jdk instead of a cached copy
+              sh "docker buildx build --pull --platform linux/amd64 -t ${IMAGE_NAME} --load ."
+            }
+          }
+        }
+
+        stage('Verify Base Image') {
+          steps {
+            script {
+              // Fails the build if any tool required by downstream services is missing
+              sh """
+                docker run --rm --entrypoint sh ${IMAGE_NAME} -c '
+                  set -e
+                  java -version
+                  mysqldump --version
+                  ffmpeg -version | head -n 1
+                  ls /usr/lib/jni/libopencv_java*.so
+                '
+              """
             }
           }
         }
