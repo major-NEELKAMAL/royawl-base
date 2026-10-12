@@ -37,6 +37,16 @@ pipeline {
           }
         }
 
+        stage('Enable amd64 Emulation') {
+          steps {
+            script {
+              // Jenkins runs on aarch64 (Graviton) while prod is x86_64; register QEMU so RUN steps
+              // in the amd64 image can execute. Registration is lost on reboot, so do it every build.
+              sh "docker run --privileged --rm tonistiigi/binfmt --install amd64"
+            }
+          }
+        }
+
         stage('Docker Image Create') {
           steps {
             script {
@@ -52,7 +62,7 @@ pipeline {
             script {
               // Fails the build if any tool required by downstream services is missing
               sh """
-                docker run --rm --entrypoint sh ${IMAGE_NAME} -c '
+                docker run --rm --platform linux/amd64 --entrypoint sh ${IMAGE_NAME} -c '
                   set -e
                   java -version
                   mysqldump --version
