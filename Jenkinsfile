@@ -37,22 +37,12 @@ pipeline {
           }
         }
 
-        stage('Enable amd64 Emulation') {
-          steps {
-            script {
-              // Jenkins runs on aarch64 (Graviton) while prod is x86_64; register QEMU so RUN steps
-              // in the amd64 image can execute. Registration is lost on reboot, so do it every build.
-              sh "docker run --privileged --rm tonistiigi/binfmt --install amd64"
-            }
-          }
-        }
-
         stage('Docker Image Create') {
           steps {
             script {
-              // Builds the new amd64 base image and loads it into the local Docker daemon
+              // Builds the new arm64 base image (native on the Graviton Jenkins; the test VM is arm64 too) and loads it into the local Docker daemon
               // --pull fetches the latest eclipse-temurin:21-jdk instead of a cached copy
-              sh "docker buildx build --pull --platform linux/amd64 -t ${IMAGE_NAME} --load ."
+              sh "docker buildx build --pull --platform linux/arm64 -t ${IMAGE_NAME} --load ."
             }
           }
         }
@@ -62,7 +52,7 @@ pipeline {
             script {
               // Fails the build if any tool required by downstream services is missing
               sh """
-                docker run --rm --platform linux/amd64 --entrypoint sh ${IMAGE_NAME} -c '
+                docker run --rm --platform linux/arm64 --entrypoint sh ${IMAGE_NAME} -c '
                   set -e
                   java -version
                   mysqldump --version
